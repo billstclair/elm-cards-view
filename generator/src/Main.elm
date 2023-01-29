@@ -13,7 +13,7 @@
 module Main exposing (main)
 
 import Browser
-import Cards exposing (Card(..))
+import Cards exposing (Card(..), Suit(..))
 import Cmd.Extra exposing (addCmd, withCmd, withCmds, withNoCmd)
 import Dict exposing (Dict)
 import Html
@@ -251,8 +251,83 @@ view model =
 
 cardDescriptionsToCode : List CardDescription -> String
 cardDescriptionsToCode cardDescriptions =
-    -- TODO
-    Debug.toString cardDescriptions
+    encodeCardDescriptions cardDescriptions
+        |> fillinCodeTemplate
+
+
+codeTemplate : String
+codeTemplate =
+    """
+module CardsView.Cards exposing (cardsJson)
+
+cardsJson : String
+cardsJson =
+    \"\"\"
+$$$
+    \"\"\"
+    """
+
+
+fillinCodeTemplate : String -> String
+fillinCodeTemplate json =
+    String.replace "$$$" json codeTemplate
+
+
+encodeCardDescriptions : List CardDescription -> String
+encodeCardDescriptions cardDescriptions =
+    JE.list encodeCardDescription cardDescriptions
+        |> JE.encode 2
+
+
+encodeCardDescription : CardDescription -> Value
+encodeCardDescription { card, size, svg } =
+    JE.object
+        [ ( "card", encodeCard card )
+        , ( "size", encodeSize size )
+        , ( "svg", JE.string svg )
+        ]
+
+
+encodeSize : Size -> Value
+encodeSize { width, height } =
+    JE.object
+        [ ( "width", JE.int width )
+        , ( "height", JE.int height )
+        ]
+
+
+encodeCard : Card -> Value
+encodeCard card =
+    cardToString card
+        |> JE.string
+
+
+cardToString : Card -> String
+cardToString card =
+    case card of
+        Back ->
+            "0+blank"
+
+        Card suit face ->
+            (Cards.defaultFace face |> String.fromInt)
+                ++ "+"
+                ++ suitToString suit
+
+
+suitToString : Suit -> String
+suitToString suit =
+    case suit of
+        Clubs ->
+            "clubs"
+
+        Diamonds ->
+            "diamonds"
+
+        Hearts ->
+            "hearts"
+
+        Spades ->
+            "spades"
 
 
 b : String -> Html msg
