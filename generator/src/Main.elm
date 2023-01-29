@@ -13,11 +13,9 @@
 module Main exposing (main)
 
 import Browser
-import Cards exposing (Card)
+import Cards exposing (Card(..))
 import Cmd.Extra exposing (addCmd, withCmd, withCmds, withNoCmd)
 import Dict exposing (Dict)
-import File exposing (File)
-import File.Select
 import Html
     exposing
         ( Attribute
@@ -95,27 +93,36 @@ type alias Index =
     Dict String String
 
 
-type alias CardIndex =
-    Dict Card String
+type alias Size =
+    { width : Int
+    , height : Int
+    }
+
+
+type alias CardDescription =
+    { card : Card
+    , size : Size
+    , svg : String
+    }
 
 
 type alias Model =
     { message : Maybe String
     , index : Maybe Index
-    , cardIndex : Maybe CardIndex
+    , cardDescriptions : Maybe (List CardDescription)
     }
 
 
 type Msg
     = ReceiveIndex (Result Http.Error String)
-    | ReceiveSvg Card (Result Http.Error String)
+    | ReceiveSvg Card (List CardDescription) (List ( String, String )) (Result Http.Error String)
 
 
 init : () -> ( Model, Cmd Msg )
 init _ =
     { message = Nothing
     , index = Nothing
-    , cardIndex = Nothing
+    , cardDescriptions = Nothing
     }
         |> withCmd (getString indexUrl ReceiveIndex)
 
@@ -128,9 +135,14 @@ getString url wrapper =
         }
 
 
+svgDirectory : String
+svgDirectory =
+    "svg/"
+
+
 indexUrl : String
 indexUrl =
-    "svg/index.json"
+    svgDirectory ++ "index.json"
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -139,31 +151,108 @@ update msg model =
         ReceiveIndex result ->
             receiveIndex result model
 
-        ReceiveSvg card result ->
-            receiveSvg card result model
+        ReceiveSvg card res indexList result ->
+            receiveSvg card res indexList result model
 
 
 receiveIndex : Result Http.Error String -> Model -> ( Model, Cmd Msg )
 receiveIndex result model =
-    -- TODO
-    model |> withNoCmd
+    case result of
+        Err err ->
+            { model
+                | message = Just <| Debug.toString err
+            }
+                |> withNoCmd
+
+        Ok json ->
+            case JD.decodeString (JD.dict JD.string) json of
+                Err derr ->
+                    { model | message = Just <| JD.errorToString derr }
+                        |> withNoCmd
+
+                Ok index ->
+                    processIndex [] (Dict.toList index) model
 
 
-receiveSvg : Card -> Result Http.Error String -> Model -> ( Model, Cmd Msg )
-receiveSvg card result model =
+processIndex : List CardDescription -> List ( String, String ) -> Model -> ( Model, Cmd Msg )
+processIndex res indexList model =
+    case indexList of
+        [] ->
+            { model
+                | message = Nothing
+                , cardDescriptions = Just res
+            }
+                |> withNoCmd
+
+        ( cardString, fileName ) :: tail ->
+            case cardStringToCard cardString of
+                Err err ->
+                    { model | message = Just err } |> withNoCmd
+
+                Ok card ->
+                    let
+                        url =
+                            svgDirectory ++ fileName
+                    in
+                    { model | message = Just cardString }
+                        |> withCmd
+                            (getString url <| ReceiveSvg card res tail)
+
+
+cardStringToCard : String -> Result String Card
+cardStringToCard cardString =
+    case String.split "+" cardString of
+        [ numString, suit ] ->
+            case String.toInt numString of
+                Nothing ->
+                    Err <| "Non-numeric card: " ++ cardString
+
+                Just num ->
+                    Ok <| Debug.log "card" <| Cards.defaultNew Back suit num
+
+        _ ->
+            Err <| "Not 'int+suit' string: " ++ cardString
+
+
+receiveSvg : Card -> List CardDescription -> List ( String, String ) -> Result Http.Error String -> Model -> ( Model, Cmd Msg )
+receiveSvg card res indexList result model =
     -- TODO
     model |> withNoCmd
 
 
 view : Model -> Html Msg
 view model =
-    case model.message of
-        Nothing ->
-            text ""
+    div []
+        [ case model.message of
+            Nothing ->
+                text ""
 
-        Just message ->
-            p [ style "color" "red" ]
-                [ text message ]
+            Just message ->
+                p [ style "color" "red" ]
+                    [ text message ]
+        , case model.cardDescriptions of
+            Nothing ->
+                text ""
+
+            Just cardDescriptions ->
+                p []
+                    [ b "Code for src/CardsView/cards.elm:"
+                    , br
+                    , textarea
+                        [ rows 20
+                        , cols 80
+                        , readonly True
+                        , value <| cardDescriptionsToCode cardDescriptions
+                        ]
+                        []
+                    ]
+        ]
+
+
+cardDescriptionsToCode : List CardDescription -> String
+cardDescriptionsToCode cardDescriptions =
+    -- TODO
+    Debug.toString cardDescriptions
 
 
 b : String -> Html msg
