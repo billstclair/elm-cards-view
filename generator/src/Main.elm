@@ -246,7 +246,7 @@ parseToCardDescription card svg model =
     let
         errMsg : String -> String -> Maybe String
         errMsg prefix errString =
-            Just <| prefix ++ prettyCardToString card ++ ": " ++ errString
+            Just <| prefix ++ prettyCardToString card ++ ", " ++ errString
 
         badSvgParse : String -> Result Model CardDescription
         badSvgParse prefix =
@@ -301,11 +301,29 @@ parseToCardDescription card svg model =
                                                             }
 
                 _ ->
-                    badSvgParse "Svg parsed to non-element."
+                    Err
+                        { model
+                            | message =
+                                Just <|
+                                    "Svg parsed to non-element for: "
+                                        ++ prettyCardToString card
+                            , text = Just <| Debug.toString node
+                        }
 
 
 view : Model -> Html Msg
 view model =
+    let
+        area : String -> Html Msg
+        area str =
+            textarea
+                [ rows 20
+                , cols 80
+                , readonly True
+                , value str
+                ]
+                []
+    in
     div []
         [ case model.message of
             Nothing ->
@@ -314,22 +332,25 @@ view model =
             Just message ->
                 p [ style "color" "red" ]
                     [ text message ]
-        , case model.cardDescriptions of
-            Nothing ->
-                text ""
-
-            Just cardDescriptions ->
+        , case model.text of
+            Just txt ->
                 p []
-                    [ b "Code for src/CardsView/cards.elm:"
+                    [ b "Bad SVG:"
                     , br
-                    , textarea
-                        [ rows 20
-                        , cols 80
-                        , readonly True
-                        , value <| cardDescriptionsToCode cardDescriptions
-                        ]
-                        []
+                    , area txt
                     ]
+
+            Nothing ->
+                case model.cardDescriptions of
+                    Nothing ->
+                        text ""
+
+                    Just cardDescriptions ->
+                        p []
+                            [ b "Code for src/CardsView/cards.elm:"
+                            , br
+                            , area <| cardDescriptionsToCode cardDescriptions
+                            ]
         ]
 
 
