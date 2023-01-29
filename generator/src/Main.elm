@@ -13,7 +13,7 @@
 module Main exposing (main)
 
 import Browser
-import Cards exposing (Card(..), Suit(..))
+import Cards exposing (Card(..), Face(..), Suit(..))
 import Cmd.Extra exposing (addCmd, withCmd, withCmds, withNoCmd)
 import Dict exposing (Dict)
 import Html
@@ -78,6 +78,7 @@ import Html.Events exposing (onCheck, onClick, onInput, onMouseDown)
 import Http
 import Json.Decode as JD exposing (Decoder)
 import Json.Encode as JE exposing (Value)
+import SvgParser exposing (Element, SvgAttribute, SvgNode(..))
 
 
 main =
@@ -110,6 +111,7 @@ type alias Model =
     { message : Maybe String
     , index : Maybe Index
     , cardDescriptions : Maybe (List CardDescription)
+    , text : Maybe String
     }
 
 
@@ -123,6 +125,7 @@ init _ =
     { message = Nothing
     , index = Nothing
     , cardDescriptions = Nothing
+    , text = Nothing
     }
         |> withCmd (getString indexUrl ReceiveIndex)
 
@@ -179,8 +182,8 @@ processIndex res indexList model =
     case indexList of
         [] ->
             { model
-                | message = Nothing
-                , cardDescriptions = Just res
+                | message = Just "Done."
+                , cardDescriptions = Just <| List.reverse res
             }
                 |> withNoCmd
 
@@ -216,8 +219,89 @@ cardStringToCard cardString =
 
 receiveSvg : Card -> List CardDescription -> List ( String, String ) -> Result Http.Error String -> Model -> ( Model, Cmd Msg )
 receiveSvg card res indexList result model =
-    -- TODO
-    model |> withNoCmd
+    let
+        errMsg prefix errString =
+            Just <| prefix ++ prettyCardToString card ++ ": " ++ errString
+    in
+    case result of
+        Err err ->
+            { model
+                | message =
+                    errMsg "Error loading svg for: " <|
+                        Debug.toString err
+            }
+                |> withNoCmd
+
+        Ok svg ->
+            case parseToCardDescription card svg model of
+                Err mdl ->
+                    mdl |> withNoCmd
+
+                Ok cardDescription ->
+                    processIndex (cardDescription :: res) indexList model
+
+
+parseToCardDescription : Card -> String -> Model -> Result Model CardDescription
+parseToCardDescription card svg model =
+    let
+        errMsg : String -> String -> Maybe String
+        errMsg prefix errString =
+            Just <| prefix ++ prettyCardToString card ++ ": " ++ errString
+
+        badSvgParse : String -> Result Model CardDescription
+        badSvgParse prefix =
+            Err
+                { model
+                    | message = errMsg prefix "see textarea below."
+                    , text = Just svg
+                }
+    in
+    case SvgParser.parseToNode svg of
+        Err perr ->
+            badSvgParse <|
+                "Error parsing svg for: "
+                    ++ Debug.toString perr
+
+        Ok node ->
+            case node of
+                SvgElement { name, attributes } ->
+                    if name /= "svg" then
+                        badSvgParse "Non-svg outer node for: "
+
+                    else
+                        let
+                            attrs =
+                                Dict.fromList attributes
+                        in
+                        case Dict.get "width" attrs of
+                            Nothing ->
+                                badSvgParse "No width attribute for: "
+
+                            Just wstr ->
+                                case String.toInt wstr of
+                                    Nothing ->
+                                        badSvgParse "Non-numeric width for: "
+
+                                    Just w ->
+                                        case Dict.get "height" attrs of
+                                            Nothing ->
+                                                badSvgParse "No width attribute for: "
+
+                                            Just hstr ->
+                                                case String.toInt hstr of
+                                                    Nothing ->
+                                                        badSvgParse
+                                                            "Non-numeric height for: "
+
+                                                    Just h ->
+                                                        Ok
+                                                            { card = card
+                                                            , size = Size w h
+                                                            , svg = svg
+                                                            }
+
+                _ ->
+                    badSvgParse "Svg parsed to non-element."
 
 
 view : Model -> Html Msg
@@ -312,6 +396,59 @@ cardToString card =
             (Cards.defaultFace face |> String.fromInt)
                 ++ "+"
                 ++ suitToString suit
+
+
+prettyCardToString : Card -> String
+prettyCardToString card =
+    case card of
+        Back ->
+            "Back"
+
+        Card suit face ->
+            faceToString face ++ " of " ++ suitToString suit
+
+
+faceToString : Face -> String
+faceToString face =
+    case face of
+        Ace ->
+            "Ace"
+
+        Two ->
+            "Two"
+
+        Three ->
+            "Three"
+
+        Four ->
+            "Four"
+
+        Five ->
+            "Five"
+
+        Six ->
+            "Six"
+
+        Seven ->
+            "Seven"
+
+        Eight ->
+            "Eight"
+
+        Nine ->
+            "Nine"
+
+        Ten ->
+            "Ten"
+
+        Jack ->
+            "Jack"
+
+        Queen ->
+            "Queen"
+
+        King ->
+            "King"
 
 
 suitToString : Suit -> String
