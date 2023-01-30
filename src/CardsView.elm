@@ -19,6 +19,7 @@ module CardsView exposing (cardToSvg)
 -}
 
 import Cards exposing (Card(..))
+import CardsView.Cards exposing (cardsJson)
 import Svg exposing (Svg)
 
 

@@ -78,6 +78,7 @@ import Html.Events exposing (onCheck, onClick, onInput, onMouseDown)
 import Http
 import Json.Decode as JD exposing (Decoder)
 import Json.Encode as JE exposing (Value)
+import List.Extra as LE
 import SvgParser exposing (Element, SvgAttribute, SvgNode(..))
 
 
@@ -211,7 +212,7 @@ cardStringToCard cardString =
                     Err <| "Non-numeric card: " ++ cardString
 
                 Just num ->
-                    Ok <| Debug.log "card" <| Cards.defaultNew Back suit num
+                    Ok <| Cards.defaultNew Back suit num
 
         _ ->
             Err <| "Not 'int+suit' string: " ++ cardString
@@ -241,6 +242,16 @@ receiveSvg card res indexList result model =
                     processIndex (cardDescription :: res) indexList model
 
 
+isSvgElement : SvgNode -> Bool
+isSvgElement node =
+    case node of
+        SvgElement _ ->
+            True
+
+        _ ->
+            False
+
+
 parseToCardDescription : Card -> String -> Model -> Result Model CardDescription
 parseToCardDescription card svg model =
     let
@@ -255,16 +266,29 @@ parseToCardDescription card svg model =
                     | message = errMsg prefix "see textarea below."
                     , text = Just svg
                 }
+
+        crd =
+            Debug.log "Parsing card" card
     in
-    case SvgParser.parseToNode svg of
+    case SvgParser.parseToNodes svg of
         Err perr ->
             badSvgParse <|
                 "Error parsing svg for: "
                     ++ Debug.toString perr
 
-        Ok node ->
-            case node of
-                SvgElement { name, attributes } ->
+        Ok nodes ->
+            case LE.find isSvgElement nodes of
+                Nothing ->
+                    Err
+                        { model
+                            | message =
+                                Just <|
+                                    "No Element node for: "
+                                        ++ prettyCardToString card
+                            , text = Just svg
+                        }
+
+                Just (SvgElement { name, attributes }) ->
                     if name /= "svg" then
                         badSvgParse "Non-svg outer node for: "
 
@@ -294,20 +318,22 @@ parseToCardDescription card svg model =
                                                             "Non-numeric height for: "
 
                                                     Just h ->
-                                                        Ok
-                                                            { card = card
-                                                            , size = Size w h
-                                                            , svg = svg
-                                                            }
+                                                        Ok <|
+                                                            Debug.log "CardDescription"
+                                                                { card = card
+                                                                , size = Size w h
+                                                                , svg = svg
+                                                                }
 
                 _ ->
+                    -- Can't happen
                     Err
                         { model
                             | message =
                                 Just <|
-                                    "Svg parsed to non-element for: "
+                                    "Svg not an element after we tested that it was: "
                                         ++ prettyCardToString card
-                            , text = Just <| Debug.toString node
+                            , text = Just <| Debug.toString nodes
                         }
 
 
@@ -347,7 +373,7 @@ view model =
 
                     Just cardDescriptions ->
                         p []
-                            [ b "Code for src/CardsView/cards.elm:"
+                            [ b "Code for src/CardsView/Cards.elm:"
                             , br
                             , area <| cardDescriptionsToCode cardDescriptions
                             ]
@@ -362,8 +388,7 @@ cardDescriptionsToCode cardDescriptions =
 
 codeTemplate : String
 codeTemplate =
-    """
-module CardsView.Cards exposing (cardsJson)
+    """module CardsView.Cards exposing (cardsJson)
 
 cardsJson : String
 cardsJson =
