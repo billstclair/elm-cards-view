@@ -383,9 +383,10 @@ fillinCodeTemplate json =
     String.replace "$$$" json codeTemplate
 
 
-escapeQuotes : String -> String
-escapeQuotes string =
+escapeString : String -> String
+escapeString string =
     String.replace "\"" "\\\"" string
+        |> String.replace "\n" "\\n"
 
 
 encodeCardTextDescriptions : List CardTextDescription -> String
@@ -399,7 +400,7 @@ encodeCardTextDescription { card, size, svg } =
     JE.object
         [ ( "card", encodeCard card )
         , ( "size", encodeSize size )
-        , ( "svg", JE.string svg )
+        , ( "svg", JE.string <| escapeString svg )
         ]
 
 

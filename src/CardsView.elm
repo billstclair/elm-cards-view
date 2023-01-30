@@ -43,9 +43,10 @@ import Dict exposing (Dict)
 import Json.Decode as JD exposing (Decoder)
 import Json.Decode.Pipeline as DP exposing (custom, hardcoded, optional, required)
 import Json.Encode as JE exposing (Value)
+import List.Extra as LE
 import Svg exposing (Svg)
 import Svg.Attributes as Svga
-import SvgParser
+import SvgParser exposing (SvgNode(..))
 
 
 {-| Width and height.
@@ -146,18 +147,33 @@ cardDescriptionDecoder =
         |> required "svg" svgDecoder
 
 
+isSvgElement : SvgNode -> Bool
+isSvgElement node =
+    case node of
+        SvgElement _ ->
+            True
+
+        _ ->
+            False
+
+
 svgDecoder : Decoder (Svg msg)
 svgDecoder =
     JD.string
         |> JD.andThen
             (\s ->
-                case SvgParser.parseToNode s of
+                case SvgParser.parseToNodes s of
                     Err err ->
                         JD.fail err
 
-                    Ok node ->
-                        SvgParser.nodeToSvg node
-                            |> JD.succeed
+                    Ok nodes ->
+                        case LE.find isSvgElement nodes of
+                            Nothing ->
+                                JD.fail "No Svg Element."
+
+                            Just node ->
+                                SvgParser.nodeToSvg node
+                                    |> JD.succeed
             )
 
 
@@ -190,7 +206,10 @@ cardToSvg card height =
         Nothing ->
             { card = card
             , size = Size 0 0
-            , svg = Svg.text ""
+            , svg =
+                Svg.text_
+                    []
+                    [ Svg.text <| "Didn't find card: " ++ Debug.toString card ]
             }
 
         Just { size, svg } ->
@@ -207,12 +226,7 @@ cardToSvg card height =
             , size = Size width height
             , svg =
                 Svg.g
-                    [ Svga.height <| String.fromInt height
-                    , Svga.viewBox <|
-                        "0,0,"
-                            ++ String.fromInt width
-                            ++ ","
-                            ++ String.fromInt height
+                    [ Svga.transform <| "scale(" ++ String.fromFloat factor ++ ")"
                     ]
                     [ svg ]
             }

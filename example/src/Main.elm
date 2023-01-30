@@ -20,6 +20,7 @@ import CardsView
         , Size
         , cardToSvg
         )
+import CardsView.Cards exposing (cardsJson)
 import Cmd.Extra exposing (addCmd, withCmd, withCmds, withNoCmd)
 import Dict exposing (Dict)
 import Html
@@ -27,6 +28,7 @@ import Html
         ( Attribute
         , Html
         , a
+        , blockquote
         , col
         , div
         , figcaption
@@ -121,15 +123,56 @@ update msg model =
             model |> withNoCmd
 
 
+br : Html msg
+br =
+    Html.br [] []
+
+
+stringFromCode : Int -> String
+stringFromCode code =
+    String.fromList [ Char.fromCode code ]
+
+
+special =
+    { nbsp = stringFromCode 160 -- \u00A0
+    , copyright = stringFromCode 169 -- \u00A9
+    , biohazard = stringFromCode 9763 -- \u2623
+    , black_star = stringFromCode 10036 -- \u2734
+    , hourglass = stringFromCode 8987 -- \u231B
+    , hourglass_flowing = stringFromCode 9203 -- \u23F3
+    , checkmark = stringFromCode 10003 -- \u2713
+    , middleDot = stringFromCode 183 -- \u00B7
+    }
+
+
 view : Model -> Html Msg
 view model =
     let
         { svg } =
             Debug.log "Jack of Diamonds" <|
-                CardsView.cardToSvg (Card Diamonds Jack) 500
+                CardsView.cardToSvg (Card Diamonds Jack) 250
     in
-    Svg.svg
-        [ Svga.width "500"
-        , Svga.height "500"
+    div []
+        [ Svg.svg
+            [ Svga.width "250"
+            , Svga.height "250"
+            ]
+            [ svg ]
+        , if not debug then
+            text ""
+
+          else
+            blockquote []
+                (String.replace " " special.nbsp cardsJson
+                    |> String.replace "\\\n" "****"
+                    |> String.split "\n"
+                    |> List.map (\s -> String.replace "****" "\\n" s)
+                    |> List.map text
+                    |> List.intersperse br
+                )
         ]
-        [ svg ]
+
+
+debug : Bool
+debug =
+    False
