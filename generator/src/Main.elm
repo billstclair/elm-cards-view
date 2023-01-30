@@ -14,6 +14,14 @@ module Main exposing (main)
 
 import Browser
 import Cards exposing (Card(..), Face(..), Suit(..))
+import CardsView
+    exposing
+        ( CardDescription
+        , Size
+        , cardToString
+        , stringToCard
+        , suitToString
+        )
 import Cmd.Extra exposing (addCmd, withCmd, withCmds, withNoCmd)
 import Dict exposing (Dict)
 import Html
@@ -93,19 +101,6 @@ main =
 
 type alias Index =
     Dict String String
-
-
-type alias Size =
-    { width : Int
-    , height : Int
-    }
-
-
-type alias CardDescription =
-    { card : Card
-    , size : Size
-    , svg : String
-    }
 
 
 type alias Model =
@@ -189,7 +184,7 @@ processIndex res indexList model =
                 |> withNoCmd
 
         ( cardString, fileName ) :: tail ->
-            case cardStringToCard cardString of
+            case stringToCard cardString of
                 Err err ->
                     { model | message = Just err } |> withNoCmd
 
@@ -201,21 +196,6 @@ processIndex res indexList model =
                     { model | message = Just cardString }
                         |> withCmd
                             (getString url <| ReceiveSvg card res tail)
-
-
-cardStringToCard : String -> Result String Card
-cardStringToCard cardString =
-    case String.split "+" cardString of
-        [ numString, suit ] ->
-            case String.toInt numString of
-                Nothing ->
-                    Err <| "Non-numeric card: " ++ cardString
-
-                Just num ->
-                    Ok <| Cards.defaultNew Back suit num
-
-        _ ->
-            Err <| "Not 'int+suit' string: " ++ cardString
 
 
 receiveSvg : Card -> List CardDescription -> List ( String, String ) -> Result Http.Error String -> Model -> ( Model, Cmd Msg )
@@ -432,18 +412,6 @@ encodeCard card =
         |> JE.string
 
 
-cardToString : Card -> String
-cardToString card =
-    case card of
-        Back ->
-            "0+blank"
-
-        Card suit face ->
-            (Cards.defaultFace face |> String.fromInt)
-                ++ "+"
-                ++ suitToString suit
-
-
 prettyCardToString : Card -> String
 prettyCardToString card =
     case card of
@@ -495,22 +463,6 @@ faceToString face =
 
         King ->
             "King"
-
-
-suitToString : Suit -> String
-suitToString suit =
-    case suit of
-        Clubs ->
-            "clubs"
-
-        Diamonds ->
-            "diamonds"
-
-        Hearts ->
-            "hearts"
-
-        Spades ->
-            "spades"
 
 
 b : String -> Html msg
