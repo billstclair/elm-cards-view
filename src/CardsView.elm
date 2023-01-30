@@ -11,7 +11,7 @@
 
 
 module CardsView exposing
-    ( cardToSvg
+    ( cardToSvg, SvgAndSize
     , Size, CardDescription
     , cardToString, stringToCard, suitToString
     )
@@ -21,9 +21,9 @@ module CardsView exposing
 
 # Convert a `Card` to `Svg`
 
-This is likely the only thing you'll use from this module.
+This is likely all that you'll use from this module.
 
-@docs cardToSvg
+@docs cardToSvg, SvgAndSize
 
 
 # Types
@@ -182,13 +182,21 @@ sizeDecoder =
         |> required "height" JD.int
 
 
+{-| Bundle up the Svg and Size of card
+-}
+type alias SvgAndSize msg =
+    { svg : Svg msg
+    , size : Size
+    }
+
+
 {-| Convert a `Card` and a height into `Svg`.
 -}
-cardToSvg : Card -> Int -> Svg msg
+cardToSvg : Card -> Int -> SvgAndSize msg
 cardToSvg card height =
     case Dict.get (cardToString card) cards of
         Nothing ->
-            Svg.text ""
+            SvgAndSize (Svg.text "") <| Size 0 0
 
         Just { size, svg } ->
             let
@@ -196,14 +204,19 @@ cardToSvg card height =
                     toFloat height / toFloat size.height
 
                 width =
-                    toFloat size.width * factor
+                    toFloat size.width
+                        * factor
+                        |> round
             in
-            Svg.g
-                [ Svga.height <| String.fromInt height
-                , Svga.viewBox <|
-                    "0,0,"
-                        ++ String.fromInt (round width)
-                        ++ ","
-                        ++ String.fromInt height
-                ]
-                [ svg ]
+            { svg =
+                Svg.g
+                    [ Svga.height <| String.fromInt height
+                    , Svga.viewBox <|
+                        "0,0,"
+                            ++ String.fromInt width
+                            ++ ","
+                            ++ String.fromInt height
+                    ]
+                    [ svg ]
+            , size = Size width height
+            }
