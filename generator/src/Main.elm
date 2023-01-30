@@ -383,6 +383,11 @@ fillinCodeTemplate json =
     String.replace "$$$" json codeTemplate
 
 
+escapeQuotes : String -> String
+escapeQuotes string =
+    String.replace "\"" "\\\"" string
+
+
 encodeCardTextDescriptions : List CardTextDescription -> String
 encodeCardTextDescriptions cardDescriptions =
     JE.list encodeCardTextDescription cardDescriptions

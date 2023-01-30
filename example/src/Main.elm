@@ -18,9 +18,7 @@ import CardsView
     exposing
         ( CardDescription
         , Size
-        , cardToString
-        , stringToCard
-        , suitToString
+        , cardToSvg
         )
 import Cmd.Extra exposing (addCmd, withCmd, withCmds, withNoCmd)
 import Dict exposing (Dict)
@@ -87,6 +85,8 @@ import Http
 import Json.Decode as JD exposing (Decoder)
 import Json.Encode as JE exposing (Value)
 import List.Extra as LE
+import Svg exposing (Svg)
+import Svg.Attributes as Svga
 
 
 main =
@@ -123,4 +123,13 @@ update msg model =
 
 view : Model -> Html Msg
 view model =
-    text "Example coming soon."
+    let
+        { svg } =
+            Debug.log "Jack of Diamonds" <|
+                CardsView.cardToSvg (Card Diamonds Jack) 500
+    in
+    Svg.svg
+        [ Svga.width "500"
+        , Svga.height "500"
+        ]
+        [ svg ]
