@@ -16,7 +16,7 @@ import Browser
 import Cards exposing (Card(..), Face(..), Suit(..))
 import CardsView
     exposing
-        ( CardDescription
+        ( CardTextDescription
         , Size
         , cardToString
         , stringToCard
@@ -106,14 +106,14 @@ type alias Index =
 type alias Model =
     { message : Maybe String
     , index : Maybe Index
-    , cardDescriptions : Maybe (List CardDescription)
+    , cardDescriptions : Maybe (List CardTextDescription)
     , text : Maybe String
     }
 
 
 type Msg
     = ReceiveIndex (Result Http.Error String)
-    | ReceiveSvg Card (List CardDescription) (List ( String, String )) (Result Http.Error String)
+    | ReceiveSvg Card (List CardTextDescription) (List ( String, String )) (Result Http.Error String)
 
 
 init : () -> ( Model, Cmd Msg )
@@ -173,7 +173,7 @@ receiveIndex result model =
                     processIndex [] (Dict.toList index) model
 
 
-processIndex : List CardDescription -> List ( String, String ) -> Model -> ( Model, Cmd Msg )
+processIndex : List CardTextDescription -> List ( String, String ) -> Model -> ( Model, Cmd Msg )
 processIndex res indexList model =
     case indexList of
         [] ->
@@ -198,7 +198,7 @@ processIndex res indexList model =
                             (getString url <| ReceiveSvg card res tail)
 
 
-receiveSvg : Card -> List CardDescription -> List ( String, String ) -> Result Http.Error String -> Model -> ( Model, Cmd Msg )
+receiveSvg : Card -> List CardTextDescription -> List ( String, String ) -> Result Http.Error String -> Model -> ( Model, Cmd Msg )
 receiveSvg card res indexList result model =
     let
         errMsg prefix errString =
@@ -214,12 +214,12 @@ receiveSvg card res indexList result model =
                 |> withNoCmd
 
         Ok svg ->
-            case parseToCardDescription card svg model of
+            case parseToCardTextDescription card svg model of
                 Err mdl ->
                     mdl |> withNoCmd
 
-                Ok cardDescription ->
-                    processIndex (cardDescription :: res) indexList model
+                Ok cardTextDescription ->
+                    processIndex (cardTextDescription :: res) indexList model
 
 
 isSvgElement : SvgNode -> Bool
@@ -232,14 +232,14 @@ isSvgElement node =
             False
 
 
-parseToCardDescription : Card -> String -> Model -> Result Model CardDescription
-parseToCardDescription card svg model =
+parseToCardTextDescription : Card -> String -> Model -> Result Model CardTextDescription
+parseToCardTextDescription card svg model =
     let
         errMsg : String -> String -> Maybe String
         errMsg prefix errString =
             Just <| prefix ++ prettyCardToString card ++ ", " ++ errString
 
-        badSvgParse : String -> Result Model CardDescription
+        badSvgParse : String -> Result Model CardTextDescription
         badSvgParse prefix =
             Err
                 { model
@@ -299,7 +299,7 @@ parseToCardDescription card svg model =
 
                                                     Just h ->
                                                         Ok <|
-                                                            Debug.log "CardDescription"
+                                                            Debug.log "CardTextDescription"
                                                                 { card = card
                                                                 , size = Size w h
                                                                 , svg = svg
@@ -360,9 +360,9 @@ view model =
         ]
 
 
-cardDescriptionsToCode : List CardDescription -> String
+cardDescriptionsToCode : List CardTextDescription -> String
 cardDescriptionsToCode cardDescriptions =
-    encodeCardDescriptions cardDescriptions
+    encodeCardTextDescriptions cardDescriptions
         |> fillinCodeTemplate
 
 
@@ -383,14 +383,14 @@ fillinCodeTemplate json =
     String.replace "$$$" json codeTemplate
 
 
-encodeCardDescriptions : List CardDescription -> String
-encodeCardDescriptions cardDescriptions =
-    JE.list encodeCardDescription cardDescriptions
+encodeCardTextDescriptions : List CardTextDescription -> String
+encodeCardTextDescriptions cardDescriptions =
+    JE.list encodeCardTextDescription cardDescriptions
         |> JE.encode 2
 
 
-encodeCardDescription : CardDescription -> Value
-encodeCardDescription { card, size, svg } =
+encodeCardTextDescription : CardTextDescription -> Value
+encodeCardTextDescription { card, size, svg } =
     JE.object
         [ ( "card", encodeCard card )
         , ( "size", encodeSize size )

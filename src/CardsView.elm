@@ -11,8 +11,8 @@
 
 
 module CardsView exposing
-    ( cardToSvg, SvgAndSize
-    , Size, CardDescription
+    ( cardToSvg, CardDescription
+    , Size, CardTextDescription
     , cardToString, stringToCard, suitToString
     )
 
@@ -23,12 +23,12 @@ module CardsView exposing
 
 This is likely all that you'll use from this module.
 
-@docs cardToSvg, SvgAndSize
+@docs cardToSvg, CardDescription
 
 
 # Types
 
-@docs Size, CardDescription
+@docs Size, CardTextDescription
 
 
 # Utilities
@@ -58,14 +58,14 @@ type alias Size =
 
 {-| Information about one card.
 -}
-type alias CardDescription =
+type alias CardTextDescription =
     { card : Card
     , size : Size
     , svg : String
     }
 
 
-type alias CardSvgDescription msg =
+type alias CardDescription msg =
     { card : Card
     , size : Size
     , svg : Svg msg
@@ -123,9 +123,9 @@ suitToString suit =
 
 {-| The cards.
 -}
-cards : Dict String (CardSvgDescription msg)
+cards : Dict String (CardDescription msg)
 cards =
-    case JD.decodeString (JD.list cardSvgDescriptionDecoder) cardsJson of
+    case JD.decodeString (JD.list cardDescriptionDecoder) cardsJson of
         Err err ->
             let
                 err2 =
@@ -138,9 +138,9 @@ cards =
                 |> Dict.fromList
 
 
-cardSvgDescriptionDecoder : Decoder (CardSvgDescription msg)
-cardSvgDescriptionDecoder =
-    JD.succeed CardSvgDescription
+cardDescriptionDecoder : Decoder (CardDescription msg)
+cardDescriptionDecoder =
+    JD.succeed CardDescription
         |> required "card" cardDecoder
         |> required "size" sizeDecoder
         |> required "svg" svgDecoder
@@ -182,21 +182,16 @@ sizeDecoder =
         |> required "height" JD.int
 
 
-{-| Bundle up the Svg and Size of card
--}
-type alias SvgAndSize msg =
-    { svg : Svg msg
-    , size : Size
-    }
-
-
 {-| Convert a `Card` and a height into `Svg`.
 -}
-cardToSvg : Card -> Int -> SvgAndSize msg
+cardToSvg : Card -> Int -> CardDescription msg
 cardToSvg card height =
     case Dict.get (cardToString card) cards of
         Nothing ->
-            SvgAndSize (Svg.text "") <| Size 0 0
+            { card = card
+            , size = Size 0 0
+            , svg = Svg.text ""
+            }
 
         Just { size, svg } ->
             let
@@ -208,7 +203,9 @@ cardToSvg card height =
                         * factor
                         |> round
             in
-            { svg =
+            { card = card
+            , size = Size width height
+            , svg =
                 Svg.g
                     [ Svga.height <| String.fromInt height
                     , Svga.viewBox <|
@@ -218,5 +215,4 @@ cardToSvg card height =
                             ++ String.fromInt height
                     ]
                     [ svg ]
-            , size = Size width height
             }
