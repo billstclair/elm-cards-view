@@ -261,7 +261,7 @@ computeCardsPerRow spacing ( w, h ) =
             w // perRow
 
         height =
-            toFloat (width - spacing) / cardWidthRatio |> floor
+            toFloat (width - spacing) / cardWidthRatio |> ceiling
     in
     { perRow = perRow
     , cardWidth = width
@@ -340,14 +340,16 @@ view model =
             rows * (cardHeight + spacing)
     in
     div []
-        [ Svg.svg
+        [ div [ style "margin" "auto" ]
+            [ button ShuffleTheDeck "Shuffle"
+            , text " "
+            , button RestoreDeck "Restore"
+            ]
+        , Svg.svg
             [ Svga.width <| String.fromInt width
             , Svga.height <| String.fromInt svgHeight
             ]
             [ loop model.deck ( startX, 0 ) [] ]
-        , button ShuffleTheDeck "Shuffle"
-        , text " "
-        , button RestoreDeck "Restore"
         ]
 
 
