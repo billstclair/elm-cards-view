@@ -6146,7 +6146,7 @@ var $author$project$Main$update = F2(
 						}));
 			case 'ShuffleTheDeck':
 				return A2($Janiczek$cmd_extra$Cmd$Extra$withCmd, $author$project$Main$shuffleDeck, model);
-			default:
+			case 'ReceiveDeck':
 				var deck = msg.a;
 				return $Janiczek$cmd_extra$Cmd$Extra$withNoCmd(
 					_Utils_update(
@@ -6154,8 +6154,16 @@ var $author$project$Main$update = F2(
 						{
 							deck: A2($sudo_rushil$elm_cards$Deck$appendCard, $sudo_rushil$elm_cards$Cards$Back, deck)
 						}));
+			default:
+				return $Janiczek$cmd_extra$Cmd$Extra$withNoCmd(
+					_Utils_update(
+						model,
+						{
+							deck: A2($sudo_rushil$elm_cards$Deck$appendCard, $sudo_rushil$elm_cards$Cards$Back, $sudo_rushil$elm_cards$Deck$fullDeck)
+						}));
 		}
 	});
+var $author$project$Main$RestoreDeck = {$: 'RestoreDeck'};
 var $author$project$Main$ShuffleTheDeck = {$: 'ShuffleTheDeck'};
 var $elm$html$Html$b = _VirtualDom_node('b');
 var $elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
@@ -7390,7 +7398,9 @@ var $author$project$Main$view = function (model) {
 						_Utils_Tuple2(startX, 0),
 						_List_Nil)
 					])),
-				A2($author$project$Main$button, $author$project$Main$ShuffleTheDeck, 'Shuffle')
+				A2($author$project$Main$button, $author$project$Main$ShuffleTheDeck, 'Shuffle'),
+				$elm$html$Html$text(' '),
+				A2($author$project$Main$button, $author$project$Main$RestoreDeck, 'Restore')
 			]));
 };
 var $author$project$Main$main = $elm$browser$Browser$element(

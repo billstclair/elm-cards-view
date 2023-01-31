@@ -123,6 +123,7 @@ type Msg
     = WindowResize Int Int
     | ShuffleTheDeck
     | ReceiveDeck ShuffledDeck
+    | RestoreDeck
 
 
 init : () -> ( Model, Cmd Msg )
@@ -160,6 +161,10 @@ update msg model =
 
         ReceiveDeck deck ->
             { model | deck = deck |> Deck.appendCard Back }
+                |> withNoCmd
+
+        RestoreDeck ->
+            { model | deck = Deck.fullDeck |> Deck.appendCard Back }
                 |> withNoCmd
 
 
@@ -341,6 +346,8 @@ view model =
             ]
             [ loop model.deck ( startX, 0 ) [] ]
         , button ShuffleTheDeck "Shuffle"
+        , text " "
+        , button RestoreDeck "Restore"
         ]
 
 
