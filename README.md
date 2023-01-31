@@ -22,4 +22,3 @@ CardsView.cardToSvg kingOfSpades 200
 
 The [example](https://github.com/billstclair/elm-cards-view/tree/main/example) is live at [say-uncle.ninja/cards.html](https://say-uncle.ninja/cards.html).
 
-The card represenation is thanks to [sudo-rushil/elm-cards](https://package.elm-lang.org/packages/sudo-rushil/elm-cards/latest/).
