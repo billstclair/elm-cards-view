@@ -57,7 +57,7 @@ type alias Size =
     }
 
 
-{-| Information about one card.
+{-| Low-level information about a card.
 -}
 type alias CardTextDescription =
     { card : Card
@@ -66,6 +66,8 @@ type alias CardTextDescription =
     }
 
 
+{-| Information about one card.
+-}
 type alias CardDescription msg =
     { card : Card
     , size : Size
