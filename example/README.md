@@ -20,5 +20,5 @@ To upload `cards.html` to https://say-uncle.ninja/cards.html (which you can only
 
 ```
 $ cd .../CardsView/example/site
-$ rsyncit
+$ [rsyncit](https://github.com/billstclair/wws-scripts/blob/master/bin/rsyncit)
 ```
