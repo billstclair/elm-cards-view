@@ -129,7 +129,7 @@ init : () -> ( Model, Cmd Msg )
 init _ =
     { message = Nothing
     , windowSize = ( 1024, 768 )
-    , deck = Deck.fullDeck
+    , deck = Deck.fullDeck |> Deck.appendCard Back
     }
         |> withCmds
             [ Task.perform getViewport Dom.getViewport
@@ -159,7 +159,7 @@ update msg model =
             model |> withCmd shuffleDeck
 
         ReceiveDeck deck ->
-            { model | deck = deck }
+            { model | deck = deck |> Deck.appendCard Back }
                 |> withNoCmd
 
 
