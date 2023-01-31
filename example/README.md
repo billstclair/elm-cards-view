@@ -19,4 +19,4 @@ $ bin/build
 To upload `cards.html` to https://say-uncle.ninja/cards.html (which you can only do if you're me):
 
 `$ cd .../CardsView/example/site`<br/>
-`$ `[`rsyncit`](https://github.com/billstclair/wws-scripts/blob/master/bin/rsyncit)
+`$`[`rsyncit`](https://github.com/billstclair/wws-scripts/blob/master/bin/rsyncit)
