@@ -19,3 +19,5 @@ import CardsView
 kingOfSpades = Cards.new "spades" 13
 CardsView.cardToSvg kingOfSpades 200
 ```
+
+The example is live at https://say-uncle.ninja/cards.html
