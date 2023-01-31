@@ -7283,7 +7283,7 @@ var $author$project$Main$computeCardsPerRow = F2(
 		var minWidth = $elm$core$Basics$ceiling(($author$project$Main$minCardHeight * $author$project$Main$cardWidthRatio) + spacing);
 		var perRow = A2($elm$core$Basics$min, 13, (w / minWidth) | 0);
 		var width = (w / perRow) | 0;
-		var height = $elm$core$Basics$floor((width - spacing) / $author$project$Main$cardWidthRatio);
+		var height = $elm$core$Basics$ceiling((width - spacing) / $author$project$Main$cardWidthRatio);
 		return {cardHeight: height, cardWidth: width, perRow: perRow};
 	});
 var $elm$html$Html$div = _VirtualDom_node('div');
@@ -7382,6 +7382,18 @@ var $author$project$Main$view = function (model) {
 		_List_fromArray(
 			[
 				A2(
+				$elm$html$Html$div,
+				_List_fromArray(
+					[
+						A2($elm$html$Html$Attributes$style, 'margin', 'auto')
+					]),
+				_List_fromArray(
+					[
+						A2($author$project$Main$button, $author$project$Main$ShuffleTheDeck, 'Shuffle'),
+						$elm$html$Html$text(' '),
+						A2($author$project$Main$button, $author$project$Main$RestoreDeck, 'Restore')
+					])),
+				A2(
 				$elm$svg$Svg$svg,
 				_List_fromArray(
 					[
@@ -7397,10 +7409,7 @@ var $author$project$Main$view = function (model) {
 						model.deck,
 						_Utils_Tuple2(startX, 0),
 						_List_Nil)
-					])),
-				A2($author$project$Main$button, $author$project$Main$ShuffleTheDeck, 'Shuffle'),
-				$elm$html$Html$text(' '),
-				A2($author$project$Main$button, $author$project$Main$RestoreDeck, 'Restore')
+					]))
 			]));
 };
 var $author$project$Main$main = $elm$browser$Browser$element(
