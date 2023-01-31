@@ -13,6 +13,8 @@
 module Main exposing (main)
 
 import Browser
+import Browser.Dom as Dom exposing (Viewport)
+import Browser.Events as Events
 import Cards exposing (Card(..), Face(..), Suit(..))
 import CardsView
     exposing
@@ -22,6 +24,7 @@ import CardsView
         )
 import CardsView.Cards exposing (cardsJson)
 import Cmd.Extra exposing (addCmd, withCmd, withCmds, withNoCmd)
+import Deck exposing (Deck, ShuffledDeck)
 import Dict exposing (Dict)
 import Html
     exposing
@@ -87,8 +90,10 @@ import Http
 import Json.Decode as JD exposing (Decoder)
 import Json.Encode as JE exposing (Value)
 import List.Extra as LE
+import Random
 import Svg exposing (Svg)
 import Svg.Attributes as Svga
+import Task exposing (Task)
 
 
 main =
@@ -96,31 +101,76 @@ main =
         { init = init
         , view = view
         , update = update
-        , subscriptions = \m -> Sub.none
+        , subscriptions = subscriptions
         }
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Sub.batch
+        [ Events.onResize WindowResize
+        ]
 
 
 type alias Model =
     { message : Maybe String
+    , windowSize : ( Int, Int )
+    , deck : ShuffledDeck
     }
 
 
 type Msg
-    = Noop
+    = WindowResize Int Int
+    | ShuffleTheDeck
+    | ReceiveDeck ShuffledDeck
 
 
 init : () -> ( Model, Cmd Msg )
 init _ =
     { message = Nothing
+    , windowSize = ( 1024, 768 )
+    , deck = Deck.fullDeck
     }
-        |> withNoCmd
+        |> withCmds
+            [ Task.perform getViewport Dom.getViewport
+            ]
+
+
+getViewport : Viewport -> Msg
+getViewport viewport =
+    let
+        vp1 =
+            Debug.log "viewport" viewport
+
+        vp =
+            vp1.viewport
+    in
+    WindowResize (round vp.width) (round vp.height)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        Noop ->
-            model |> withNoCmd
+        WindowResize w h ->
+            { model | windowSize = ( w, h ) }
+                |> withNoCmd
+
+        ShuffleTheDeck ->
+            model |> withCmd shuffleDeck
+
+        ReceiveDeck deck ->
+            { model | deck = deck }
+                |> withNoCmd
+
+
+shuffleDeck : Cmd Msg
+shuffleDeck =
+    Random.generate ReceiveDeck Deck.randomDeck
+
+
+b : String -> Html msg
+b string =
+    Html.b [] [ text string ]
 
 
 br : Html msg
@@ -145,31 +195,152 @@ special =
     }
 
 
+titledButton : String -> Bool -> Msg -> String -> Html Msg
+titledButton theTitle enabled msg label =
+    Html.button
+        [ onClick msg
+        , disabled <| not enabled
+        , title theTitle
+        , style "border-radius" "9999px"
+        , style "border-width" "1px"
+        ]
+        [ b label ]
+
+
+enabledButton : Bool -> Msg -> String -> Html Msg
+enabledButton =
+    titledButton ""
+
+
+button : Msg -> String -> Html Msg
+button =
+    enabledButton True
+
+
+minCardHeight : Int
+minCardHeight =
+    100
+
+
+cardsPerRow : Int
+cardsPerRow =
+    13
+
+
+cardWidthRatio : Float
+cardWidthRatio =
+    let
+        h =
+            500
+
+        { size } =
+            CardsView.cardToSvg (Card Diamonds Jack) h
+    in
+    toFloat size.width
+        / toFloat size.height
+
+
+computeCardsPerRow : Int -> ( Int, Int ) -> { perRow : Int, cardWidth : Int, cardHeight : Int }
+computeCardsPerRow spacing ( w, h ) =
+    let
+        minWidth =
+            toFloat minCardHeight
+                * cardWidthRatio
+                + toFloat spacing
+                |> ceiling
+
+        perRow =
+            min 13 <| w // minWidth
+
+        width =
+            w // perRow
+
+        height =
+            toFloat (width - spacing) / cardWidthRatio |> floor
+    in
+    { perRow = perRow
+    , cardWidth = width
+    , cardHeight = height
+    }
+
+
 view : Model -> Html Msg
 view model =
     let
-        { svg } =
-            Debug.log "Jack of Diamonds" <|
-                CardsView.cardToSvg (Card Diamonds Jack) 250
+        spacing =
+            6
+
+        startX =
+            spacing // 2
+
+        ( width, height ) =
+            model.windowSize
+
+        { perRow, cardWidth, cardHeight } =
+            computeCardsPerRow spacing model.windowSize
+
+        cardSvg : ShuffledDeck -> ( Int, Int ) -> Maybe ( ShuffledDeck, ( Int, Int ), Svg Msg )
+        cardSvg deck ( x, y ) =
+            case Deck.length deck of
+                0 ->
+                    Nothing
+
+                _ ->
+                    let
+                        ( card, nextDeck ) =
+                            Deck.draw deck
+
+                        { svg } =
+                            CardsView.cardToSvg card cardHeight
+
+                        placedSvg =
+                            Svg.g
+                                [ Svga.transform <|
+                                    "translate("
+                                        ++ String.fromInt x
+                                        ++ " "
+                                        ++ String.fromInt y
+                                        ++ ")"
+                                ]
+                                [ svg ]
+
+                        rawNextX =
+                            x + cardWidth
+
+                        ( nextX, nextY ) =
+                            if rawNextX + cardWidth > width then
+                                ( startX, y + cardHeight + spacing )
+
+                            else
+                                ( rawNextX, y )
+                    in
+                    Just ( nextDeck, ( nextX, nextY ), placedSvg )
+
+        loop : ShuffledDeck -> ( Int, Int ) -> List (Svg Msg) -> Svg Msg
+        loop deck position svgs =
+            case cardSvg deck position of
+                Nothing ->
+                    Svg.g [] <|
+                        List.reverse svgs
+
+                Just ( nextDeck, nextPosition, svg ) ->
+                    loop nextDeck nextPosition <| svg :: svgs
+
+        rows =
+            (toFloat <| Deck.length model.deck)
+                / toFloat perRow
+                |> ceiling
+
+        svgHeight =
+            rows * (cardHeight + spacing)
     in
     div []
         [ Svg.svg
-            [ Svga.width "250"
-            , Svga.height "250"
+            [ Svga.width <| String.fromInt width
+            , Svga.height <| String.fromInt svgHeight
             ]
-            [ svg ]
-        , if not debug then
-            text ""
-
-          else
-            blockquote []
-                (String.replace " " special.nbsp cardsJson
-                    |> String.replace "\\\n" "****"
-                    |> String.split "\n"
-                    |> List.map (\s -> String.replace "****" "\\n" s)
-                    |> List.map text
-                    |> List.intersperse br
-                )
+            [ loop model.deck ( startX, 0 ) [] ]
+        , button ShuffleTheDeck "Shuffle"
         ]
 
 
