@@ -11,8 +11,8 @@
 
 
 module CardsView exposing
-    ( cardToSvg, CardDescription
-    , Size, CardTextDescription
+    ( cardToSvg
+    , Size, CardDescription, CardTextDescription
     , cardToString, stringToCard, suitToString
     )
 
@@ -23,12 +23,12 @@ module CardsView exposing
 
 This is likely all that you'll use from this module.
 
-@docs cardToSvg, CardDescription
+@docs cardToSvg
 
 
 # Types
 
-@docs Size, CardTextDescription
+@docs Size, CardDescription, CardTextDescription
 
 
 # Utilities
