@@ -11,9 +11,9 @@
 
 
 module CardsView exposing
-    ( cardToSvg
+    ( cardToSvg, cardToClickableSvg
     , CardDescription, Size, CardTextDescription
-    , cardToString, stringToCard, suitToString
+    , cardToPrettyString, cardToString, stringToCard, suitToString
     )
 
 {-| Turn a playing card into an `Svg` instance.
@@ -23,7 +23,7 @@ module CardsView exposing
 
 This is likely all that you'll use from this module.
 
-@docs cardToSvg
+@docs cardToSvg, cardToClickableSvg
 
 
 # Types
@@ -33,11 +33,11 @@ This is likely all that you'll use from this module.
 
 # Utilities
 
-@docs cardToString, stringToCard, suitToString
+@docs cardToPrettyString, cardToString, stringToCard, suitToString
 
 -}
 
-import Cards exposing (Card(..), Suit(..))
+import Cards exposing (Card(..), Face(..), Suit(..))
 import CardsView.Cards exposing (cardsJson)
 import Dict exposing (Dict)
 import Json.Decode as JD exposing (Decoder)
@@ -46,6 +46,7 @@ import Json.Encode as JE exposing (Value)
 import List.Extra as LE
 import Svg exposing (Svg)
 import Svg.Attributes as Svga
+import Svg.Events as Svge
 import SvgParser exposing (SvgNode(..))
 
 
@@ -122,6 +123,66 @@ suitToString suit =
 
         Spades ->
             "spades"
+
+
+{-| Convert a `Face` to a `String`.
+-}
+faceToString : Face -> String
+faceToString face =
+    case face of
+        Ace ->
+            "Ace"
+
+        Two ->
+            "Two"
+
+        Three ->
+            "Three"
+
+        Four ->
+            "Four"
+
+        Five ->
+            "Five"
+
+        Six ->
+            "Six"
+
+        Seven ->
+            "Seven"
+
+        Eight ->
+            "Eight"
+
+        Nine ->
+            "Nine"
+
+        Ten ->
+            "Ten"
+
+        Jack ->
+            "Jack"
+
+        Queen ->
+            "Queen"
+
+        King ->
+            "King"
+
+
+{-| Turn a `Card` into a pretty string.
+
+e.g. `cardToPretyString(Card Spades Queen) -> "Queen of Spades"`
+
+-}
+cardToPrettyString : Card -> String
+cardToPrettyString card =
+    case card of
+        Back ->
+            "Back"
+
+        Card suit face ->
+            faceToString face ++ " of " ++ suitToString suit
 
 
 {-| The cards.
@@ -203,7 +264,20 @@ sizeDecoder =
 {-| Convert a `Card` and a height into `Svg`.
 -}
 cardToSvg : Card -> Int -> CardDescription msg
-cardToSvg card height =
+cardToSvg =
+    cardToSvgMaybeClick Nothing
+
+
+{-| Convert a `Card` and a height into a clickable `Svg`, which invokes `msg`
+when clicked.
+-}
+cardToClickableSvg : msg -> Card -> Int -> CardDescription msg
+cardToClickableSvg msg =
+    cardToSvgMaybeClick <| Just msg
+
+
+cardToSvgMaybeClick : Maybe msg -> Card -> Int -> CardDescription msg
+cardToSvgMaybeClick maybeMsg card height =
     case Dict.get (cardToString card) cards of
         Nothing ->
             { card = card
@@ -223,6 +297,16 @@ cardToSvg card height =
                     toFloat size.width
                         * factor
                         |> round
+
+                maybeClickable : Svg msg -> Svg msg
+                maybeClickable svg2 =
+                    case maybeMsg of
+                        Nothing ->
+                            svg2
+
+                        Just msg ->
+                            Svg.g [ Svge.onClick msg ]
+                                [ svg2 ]
             in
             { card = card
             , size = Size width height
@@ -231,4 +315,5 @@ cardToSvg card height =
                     [ Svga.transform <| "scale(" ++ String.fromFloat factor ++ ")"
                     ]
                     [ svg ]
+                    |> maybeClickable
             }

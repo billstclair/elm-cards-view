@@ -91,6 +91,7 @@ import Json.Decode as JD exposing (Decoder)
 import Json.Encode as JE exposing (Value)
 import List.Extra as LE
 import Random
+import Set exposing (Set)
 import Svg exposing (Svg)
 import Svg.Attributes as Svga
 import Task exposing (Task)
@@ -116,6 +117,7 @@ type alias Model =
     { message : Maybe String
     , windowSize : ( Int, Int )
     , deck : ShuffledDeck
+    , clickedCards : List Card
     }
 
 
@@ -124,13 +126,15 @@ type Msg
     | ShuffleTheDeck
     | ReceiveDeck ShuffledDeck
     | RestoreDeck
+    | ClickCard Card
 
 
 init : () -> ( Model, Cmd Msg )
 init _ =
-    { message = Nothing
+    { message = Just "Click on a card to move it to the pile."
     , windowSize = ( 1024, 768 )
     , deck = Deck.fullDeck |> Deck.appendCard Back
+    , clickedCards = []
     }
         |> withCmds
             [ Task.perform getViewport Dom.getViewport
@@ -140,11 +144,8 @@ init _ =
 getViewport : Viewport -> Msg
 getViewport viewport =
     let
-        vp1 =
-            Debug.log "viewport" viewport
-
         vp =
-            vp1.viewport
+            viewport.viewport
     in
     WindowResize (round vp.width) (round vp.height)
 
@@ -166,6 +167,32 @@ update msg model =
         RestoreDeck ->
             { model | deck = Deck.fullDeck |> Deck.appendCard Back }
                 |> withNoCmd
+
+        ClickCard card ->
+            let
+                cardName =
+                    CardsView.cardToPrettyString card
+
+                mdl =
+                    { model | message = Just cardName }
+            in
+            if card == Back then
+                case mdl.clickedCards of
+                    [] ->
+                        mdl |> withNoCmd
+
+                    c :: rest ->
+                        { mdl
+                            | message = Just <| CardsView.cardToPrettyString c
+                            , clickedCards = rest
+                        }
+                            |> withNoCmd
+
+            else
+                { mdl
+                    | clickedCards = card :: mdl.clickedCards
+                }
+                    |> withNoCmd
 
 
 shuffleDeck : Cmd Msg
@@ -284,8 +311,8 @@ view model =
         { perRow, cardWidth, cardHeight } =
             computeCardsPerRow spacing model.windowSize
 
-        cardSvg : ShuffledDeck -> ( Int, Int ) -> Maybe ( ShuffledDeck, ( Int, Int ), Svg Msg )
-        cardSvg deck ( x, y ) =
+        cardSvg : ShuffledDeck -> ( Int, Int ) -> List Card -> Maybe ( ShuffledDeck, ( Int, Int ), Svg Msg )
+        cardSvg deck ( x, y ) clickedCards =
             case Deck.length deck of
                 0 ->
                     Nothing
@@ -296,7 +323,9 @@ view model =
                             Deck.draw deck
 
                         { svg } =
-                            CardsView.cardToSvg card cardHeight
+                            CardsView.cardToClickableSvg (ClickCard card)
+                                card
+                                cardHeight
 
                         placedSvg =
                             Svg.g
@@ -319,11 +348,19 @@ view model =
                             else
                                 ( rawNextX, y )
                     in
-                    Just ( nextDeck, ( nextX, nextY ), placedSvg )
+                    Just
+                        ( nextDeck
+                        , ( nextX, nextY )
+                        , if List.member card clickedCards then
+                            Svg.text ""
+
+                          else
+                            placedSvg
+                        )
 
         loop : ShuffledDeck -> ( Int, Int ) -> List (Svg Msg) -> Svg Msg
         loop deck position svgs =
-            case cardSvg deck position of
+            case cardSvg deck position model.clickedCards of
                 Nothing ->
                     Svg.g [] <|
                         List.reverse svgs
@@ -344,6 +381,13 @@ view model =
             [ button ShuffleTheDeck "Shuffle"
             , text " "
             , button RestoreDeck "Restore"
+            , br
+            , case model.message of
+                Nothing ->
+                    text special.nbsp
+
+                Just message ->
+                    text message
             ]
         , Svg.svg
             [ Svga.width <| String.fromInt width
@@ -351,8 +395,3 @@ view model =
             ]
             [ loop model.deck ( startX, 0 ) [] ]
         ]
-
-
-debug : Bool
-debug =
-    False
