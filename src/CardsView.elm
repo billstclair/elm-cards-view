@@ -13,7 +13,7 @@
 module CardsView exposing
     ( cardToSvg, cardToClickableSvg
     , CardDescription, Size, CardTextDescription
-    , cardToPrettyString, cardToString, stringToCard, suitToString
+    , cardToPrettyString, cardToString, stringToCard, suitToString, faceToString
     )
 
 {-| Turn a playing card into an `Svg` instance.
@@ -33,7 +33,7 @@ This is likely all that you'll use from this module.
 
 # Utilities
 
-@docs cardToPrettyString, cardToString, stringToCard, suitToString
+@docs cardToPrettyString, cardToString, stringToCard, suitToString, faceToString
 
 -}
 
