@@ -377,8 +377,14 @@ view model =
             rows * (cardHeight + spacing)
     in
     div []
-        [ div [ style "margin" "auto" ]
-            [ button ShuffleTheDeck "Shuffle"
+        [ div [ style "margin-left" "1em" ]
+            [ a
+                [ href "https://github.com/billstclair/elm-cards-view"
+                , target "_blank"
+                ]
+                [ text "GitHub" ]
+            , br
+            , button ShuffleTheDeck "Shuffle"
             , text " "
             , button RestoreDeck "Restore"
             , br
