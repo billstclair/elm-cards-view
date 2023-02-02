@@ -6250,6 +6250,7 @@ var $author$project$Main$ClickCard = function (a) {
 };
 var $author$project$Main$RestoreDeck = {$: 'RestoreDeck'};
 var $author$project$Main$ShuffleTheDeck = {$: 'ShuffleTheDeck'};
+var $elm$html$Html$a = _VirtualDom_node('a');
 var $elm$html$Html$br = _VirtualDom_node('br');
 var $author$project$Main$br = A2($elm$html$Html$br, _List_Nil, _List_Nil);
 var $elm$html$Html$b = _VirtualDom_node('b');
@@ -7407,6 +7408,12 @@ var $sudo_rushil$elm_cards$Deck$draw = function (_v0) {
 	}
 };
 var $elm$svg$Svg$Attributes$height = _VirtualDom_attribute('height');
+var $elm$html$Html$Attributes$href = function (url) {
+	return A2(
+		$elm$html$Html$Attributes$stringProperty,
+		'href',
+		_VirtualDom_noJavaScriptUri(url));
+};
 var $sudo_rushil$elm_cards$Deck$length = function (_v0) {
 	var cards = _v0.a.a;
 	return $elm$core$List$length(cards);
@@ -7460,6 +7467,7 @@ var $author$project$Main$special = {
 	nbsp: $author$project$Main$stringFromCode(160)
 };
 var $elm$svg$Svg$svg = $elm$svg$Svg$trustedNode('svg');
+var $elm$html$Html$Attributes$target = $elm$html$Html$Attributes$stringProperty('target');
 var $elm$svg$Svg$Attributes$width = _VirtualDom_attribute('width');
 var $author$project$Main$view = function (model) {
 	var spacing = 6;
@@ -7540,10 +7548,22 @@ var $author$project$Main$view = function (model) {
 				$elm$html$Html$div,
 				_List_fromArray(
 					[
-						A2($elm$html$Html$Attributes$style, 'margin', 'auto')
+						A2($elm$html$Html$Attributes$style, 'margin-left', '1em')
 					]),
 				_List_fromArray(
 					[
+						A2(
+						$elm$html$Html$a,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$href('https://github.com/billstclair/elm-cards-view'),
+								$elm$html$Html$Attributes$target('_blank')
+							]),
+						_List_fromArray(
+							[
+								$elm$html$Html$text('GitHub')
+							])),
+						$author$project$Main$br,
 						A2($author$project$Main$button, $author$project$Main$ShuffleTheDeck, 'Shuffle'),
 						$elm$html$Html$text(' '),
 						A2($author$project$Main$button, $author$project$Main$RestoreDeck, 'Restore'),
